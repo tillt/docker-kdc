@@ -83,6 +83,8 @@ klist
 
 This will stop the KDC server, stop and remove the container and additionally remove the temporary keytab and configuration files.
 
+---
+
 #Reference
 
 ./kdc start|stop|build|clean|shellinit
@@ -108,26 +110,39 @@ Removes the docker image.
 ##shellinit
 
 Renders the environment variables needed for using the KDC.
+`KRB5_CONFIG` points towards the temporary configuration file. `KRB5_KTNAME` points towards the temporary keytab file.
+
+On OSX, the boot2docker shellinit environment additionally gets exported for your convenience.
+
+---
 
 #Configuration
 
+The default configuration is most likely good enough for your first experiments. In case you plan to use this stuff for a production environment, changing the defaults is simply a matter of setting up environment variables prior to launching the `kdc` script.
+
 ###Kerberos principal.
-PRINCIPAL=${PRINCIPAL:-'tillt'}
+`PRINCIPAL` default: `tillt`
 
 ###Kerberos principal password.
-PASSWORD=${PASSWORD:-'matilda'}
+`PASSWORD` default: `matilda`
+
+Make sure you always provide a password as an empty password may/will crash kadmin.
 
 ###KDC hostname.
-HOST_NAME=${HOST_NAME:-'kdc'}
+`HOST_NAME` default: `kdc`
 
 ###External KDC IP.
-NATHOST=${NATHOST:-'127.0.0.1'}
+`NATHOST` default: `127.0.0.1`
+
+Note that this value gets overridden by the kdc script on OSX to allow for connecting to the boot2docker VM. You shouldn't really need to override this in any case.
 
 ###External KDC port.
-KDC_PORT=${KDC_PORT:-'48088'}
+`KDC_PORT` default: `48088`
 
 ###Kerberos domain name.
-DOMAIN_NAME=${DOMAIN_NAME:-'example.com'}
+`DOMAIN_NAME` default: `example.com`
 
 ###Kerberos realm name.
-REALM_NAME=${REALM_NAME:-'EXAMPLE.COM'}
+`REALM_NAME` default: `EXAMPLE.COM`
+
+Note that it is common practice to simply use the domain-name but all capitalized for this.
