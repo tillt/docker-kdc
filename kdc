@@ -15,13 +15,13 @@ PRINCIPAL=${PRINCIPAL:-'tillt'}
 # Kerberos principal password.
 PASSWORD=${PASSWORD:-'matilda'}
 # KDC hostname.
-HOST_NAME=${HOST_NAME:='kdc'}
+HOST_NAME=${HOST_NAME:-'kdc'}
 # External KDC IP.
 NATHOST=${NATHOST:-'127.0.0.1'}
 # External KDC port.
-KDC_PORT=${KDC_PORT:='48088'}
+KDC_PORT=${KDC_PORT:-'48088'}
 # Kerberos domain name.
-DOMAIN_NAME=${DOMAIN_NAME:='example.com'}
+DOMAIN_NAME=${DOMAIN_NAME:-'example.com'}
 # Kerberos realm name.
 REALM_NAME=${REALM_NAME:-'EXAMPLE.COM'}
 
@@ -86,8 +86,11 @@ function startDocker {
 		-e "s/REALM_NAME/$REALM_NAME/g"				\
 		templates/krb5.conf > krb5.conf
 
+	docker cp $HOST_NAME:/etc/docker-kdc/krb5.keytab .
+
 	echo "For using the KDC, make sure you use the following environment:"
 	echo "    export KRB5_CONFIG=$(pwd)/krb5.conf"
+	echo "    export KRB5_KTNAME=$(pwd)/krb5.keytab"
 	echo ""
 }
 
@@ -101,6 +104,7 @@ function stopDocker {
 		[[ `boot2docker status` == "running" ]] && boot2docker down
 	fi
 	rm -f krb5.conf
+	rm -f krb5.keytab
 	echo "Kerberos KDC stopped and removed"
 }
 
@@ -145,6 +149,7 @@ case "$1" in
 			boot2docker shellinit
 		fi
 		echo "    export KRB5_CONFIG=$(pwd)/krb5.conf"
+		echo "    export KRB5_KTNAME=$(pwd)/krb5.keytab"
 		;;
 	*)
 		echo "Usage: $0 start|stop|build|clean|shellinit"

@@ -15,7 +15,7 @@ RUN mkdir /etc/docker-kdc
 # Add a kerberos principal.
 RUN /bin/echo -e '\n\n\n\n\n\nPASSWORD\nPASSWORD\n' | kadmin -l add PRINCIPAL/HOST_NAME.DOMAIN_NAME
 
-# Export keytab. Useful for password-less in-container authentication.
+# Export keytab.
 RUN kadmin -l ext_keytab -k /etc/docker-kdc/krb5.keytab PRINCIPAL/HOST_NAME.DOMAIN_NAME
 
 # KDC daemon startup.
