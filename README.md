@@ -22,7 +22,7 @@ This will render the image which is based on plain ubuntu 14.04. Additionally th
 ./kdc start
 ```
 
-On OSX, this step start by setting up the VM (via boot2docker). The container is started in detached mode, allowing you to keep on working with this shell without having to fork another process. The container name is directly derived from the hostname supplied via the configuration (see [Configuration](#Configuration)).
+On OSX, this step start by setting up the VM (via boot2docker). The container is started in detached mode, allowing you to keep on working with this shell without having to fork another process. The container name is directly derived from the hostname supplied via the configuration (see [Configuration](#configuration)).
 
 
 ###Prepare the environment
@@ -146,3 +146,9 @@ Note that this value gets overridden by the kdc script on OSX to allow for conne
 `REALM_NAME` default: `EXAMPLE.COM`
 
 Note that it is common practice to simply use the domain-name but all capitalized for this.
+
+---
+
+#Credits
+
+This script was inspired by some work of a co-worker of mine, Matthias Veit. Matthias did the hard work of finding out how to properly route docker ports on boot2docker hosts.
