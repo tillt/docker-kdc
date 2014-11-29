@@ -6,6 +6,7 @@ Docker container for a Heimdal Kerberos 5 KDC.
 Usable on plain Linux as well as on OSX (via boot2docker). Depending on your host OS, you will need to install additional Kerberos client software for being able to communicate with the KDC. On OSX however, Heimdal Kerberos is already part of the base system.
 For installing (Heimdal) Kerberos 5 on your OS, please check the interwebz.
 
+---
 
 #Usage
 
@@ -22,7 +23,7 @@ This will render the image which is based on plain ubuntu 14.04. Additionally th
 ./kdc start
 ```
 
-On OSX, this step start by setting up the VM (via boot2docker). The container is started in detached mode, allowing you to keep on working with this shell without having to fork another process. The container name is directly derived from the hostname supplied via the configuration (see [Configuration](#configuration)).
+On OSX, this step starts by setting up the VM (via boot2docker). Then, on all host systems, the container is started in detached mode, allowing you to keep on working with this shell without having to fork another process. The container name is directly derived from the hostname supplied via the configuration (see [Configuration](#configuration)).
 
 
 ###Prepare the environment
@@ -30,7 +31,7 @@ On OSX, this step start by setting up the VM (via boot2docker). The container is
 $(./kdc shellinit)
 ```
 
-A Kerberos client needs access to a configuration file. To prevent having to edit the system wide configuration file (`/etc/krb5.conf`) a local, minimal version is rendered and supplied once the container has gotten started. Additionally, the keytab also gets exported and hence needs to be accesssable for clients making use of password-less authentication. To make use of the files, environment variables that are interpreted by Kerberos clients are prepared for your convenience.
+A Kerberos client needs access to a configuration file. To prevent having to edit the system wide configuration file (`/etc/krb5.conf`) a local, minimal version is rendered and supplied once the container has gotten started. Additionally, the keytab also gets exported and hence needs to be accessible for clients making use of password-less authentication. To make use of the files, environment variables that are interpreted by Kerberos clients are prepared for your convenience.
 
 
 ###Render a ticket supplying the principal password
@@ -152,3 +153,9 @@ Note that it is common practice to simply use the domain-name but all capitalize
 #Credits
 
 This script was inspired by some work of a co-worker of mine, Matthias Veit. Matthias did the hard work of finding out how to properly route docker ports on boot2docker hosts.
+
+---
+
+#Author
+
+* [Till Toenshoff](https://github.com/tillt) ([@ttoenshoff](https://twitter.com/ttoenshoff))
