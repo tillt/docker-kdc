@@ -121,19 +121,16 @@ On OSX, the boot2docker shellinit environment additionally gets exported for you
 
 The default configuration is most likely good enough for your first experiments. In case you plan to use this stuff for a production environment, changing the defaults is simply a matter of setting up environment variables prior to launching the `kdc` script.
 
-###Kerberos principal.
-`PRINCIPAL` default: `tillt`
-
-###Kerberos principal password.
-`PASSWORD` default: `matilda`
+###Kerberos principal and password.
+`KDC_PRINCIPAL` default: `tillt`
 
 Make sure you always provide a password as an empty password may/will crash kadmin.
 
 ###KDC hostname.
-`HOST_NAME` default: `kdc`
+`KDC_HOST_NAME` default: `kdc`
 
 ###External KDC IP.
-`NATHOST` default: `127.0.0.1`
+`KDC_NATHOST` default: `127.0.0.1`
 
 Note that this value gets overridden by the kdc script on OSX to allow for connecting to the boot2docker VM. You shouldn't really need to override this in any case.
 
@@ -141,10 +138,10 @@ Note that this value gets overridden by the kdc script on OSX to allow for conne
 `KDC_PORT` default: `48088`
 
 ###Kerberos domain name.
-`DOMAIN_NAME` default: `example.com`
+`KDC_DOMAIN_NAME` default: `example.com`
 
 ###Kerberos realm name.
-`REALM_NAME` default: `EXAMPLE.COM`
+`KDC_REALM_NAME` default: `EXAMPLE.COM`
 
 Note that it is common practice to simply use the domain-name but all capitalized for this.
 
