@@ -145,7 +145,8 @@ function buildImage {
 		-e "s/REALM_NAME/$KDC_REALM_NAME/g"			\
 		templates/krb5.conf > krb5.conf
 
-	docker build -t $DOCKERIMAGE .
+	# Use --no-cache switch to prevent broken builds due to outdated caches.
+	docker build --no-cache -t $DOCKERIMAGE .
 	rm -f Dockerfile
 	rm -f krb5.conf
 }
