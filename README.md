@@ -33,10 +33,9 @@ $(./kdc shellinit)
 
 A Kerberos client needs access to a configuration file. To prevent having to edit the system wide configuration file (`/etc/krb5.conf`) a local, minimal version is rendered and supplied once the container has gotten started. Additionally, the keytab also gets exported and hence needs to be accessible for clients making use of password-less authentication. To make use of the files, environment variables that are interpreted by Kerberos clients are prepared for your convenience.
 
-
 ###Render a ticket supplying the principal password
 ```
-kinit tillt/kdc.example.com@EXAMPLE.COM
+kinit tillt/`hostname -s`.example.com@EXAMPLE.COM
 ```
 
 Password: `matilda`
@@ -53,7 +52,7 @@ Example
 ```
 $ klist
 Credentials cache: API:42926CE1-63E2-4C66-B2D7-00B2F198182F
-        Principal: tillt/kdc.example.com@EXAMPLE.COM
+        Principal: tillt/[hostname].example.com@EXAMPLE.COM
 
   Issued                Expires               Principal
 Nov 26 11:06:25 2014  Nov 26 21:06:25 2014  krbtgt/EXAMPLE.COM@EXAMPLE.COM
@@ -66,7 +65,7 @@ kdestroy
 
 ###Render a ticket using keytab based authentication
 ```
-kinit -kt krb5.keytab tillt/kdc.example.com@EXAMPLE.COM
+kinit -kt krb5.keytab tillt/[hostname].example.com@EXAMPLE.COM
 ```
 
 ###Check the ticket
@@ -121,27 +120,35 @@ On OSX, the boot2docker shellinit environment additionally gets exported for you
 
 The default configuration is most likely good enough for your first experiments. In case you plan to use this stuff for a production environment, changing the defaults is simply a matter of setting up environment variables prior to launching the `kdc` script.
 
-###Kerberos principal and password.
-`KDC_PRINCIPAL` default: `tillt`
+###Kerberos principal and password list.
+__[Currently not configurable via enviroment variables - edit script instead]__
+default: singled entry, user `tillt` with password `matilda`.
 
-Make sure you always provide a password as an empty password may/will crash kadmin.
+###Kerberos node list.
+__[Currently not configurable via enviroment variables - edit script instead]__
+default: single entry, output of `hostname -s`.
 
 ###KDC hostname.
-`KDC_HOST_NAME` default: `kdc`
+`KDC_HOST_NAME`
+default: `kdc`
 
 ###External KDC IP.
-`KDC_NATHOST` default: `127.0.0.1`
+`KDC_NATHOST`
+default: `127.0.0.1`
 
 Note that this value gets overridden by the kdc script on OSX to allow for connecting to the boot2docker VM. You shouldn't really need to override this in any case.
 
 ###External KDC port.
-`KDC_PORT` default: `48088`
+`KDC_PORT`
+default: `48088`
 
 ###Kerberos domain name.
-`KDC_DOMAIN_NAME` default: `example.com`
+`KDC_DOMAIN_NAME`
+default: `example.com`
 
 ###Kerberos realm name.
-`KDC_REALM_NAME` default: `EXAMPLE.COM`
+`KDC_REALM_NAME`
+default: `EXAMPLE.COM`
 
 Note that it is common practice to simply use the domain-name but all capitalized for this.
 

@@ -11,8 +11,13 @@
 #
 
 # Kerberos "principal password".
-# TODO(tillt): Find a way to support default array oarameters.
-KDC_PRINCIPALS=("tillt matilda" "foo bar" "apache rulez")
+# TODO(tillt): Find a way to support default array parameters.
+KDC_PRINCIPALS=("tillt matilda")
+
+# Host/s requesting authentication using the above principal/s.
+# e.h. ("jupiter" "mars" "venus")
+KDC_CLIENTS=(`hostname -s`)
+
 # KDC hostname.
 KDC_HOST_NAME=${KDC_HOST_NAME:-'kdc'}
 # External KDC IP.
@@ -117,19 +122,22 @@ function buildImage {
 	# Use a temporary file for the add principal directives.
 	# TODO(tillt): This seems unclean - find a better way.
 	TEMP_PRINCIPALS="_principals.txt"
-	for principal in "${KDC_PRINCIPALS[@]}"
+	for authenticatee_host in "${KDC_AUTHENTICATEE_HOSTS[@]}"
 	do
-		IFS=' ' read -ra principal <<< "$principal"
-		IFS=''
+		for principal in "${KDC_PRINCIPALS[@]}"
+		do
+			IFS=' ' read -ra principal <<< "$principal"
+			IFS=''
 
-		echo $(echo $RENDER_PRINCIPAL |		 		\
-		sed -e "s/PRINCIPAL/${principal[0]}/g"			\
+			echo $(echo $RENDER_PRINCIPAL |		 	\
+			sed -e "s/PRINCIPAL/${principal[0]}/g"		\
 			-e "s/PASSWORD/${principal[1]}/g"		\
-			-e "s/HOST_NAME/$KDC_HOST_NAME/g"		\
+			-e "s/HOST_NAME/$authenticatee_host/g"		\
 			-e "s/DOMAIN_NAME/$KDC_DOMAIN_NAME/g" 		\
 			-e "s/REALM_NAME/$KDC_REALM_NAME/g")		\
-		>>$TEMP_PRINCIPALS
-		EXPORT_KEYTAB+=$(echo " ${principal[0]}/$KDC_HOST_NAME.$KDC_DOMAIN_NAME@$KDC_REALM_NAME")
+			>>$TEMP_PRINCIPALS
+			EXPORT_KEYTAB+=$(echo " ${principal[0]}/$authenticatee_host.$KDC_DOMAIN_NAME@$KDC_REALM_NAME")
+		done
 	done
 
 	DOCKER_FILE=$(<templates/Dockerfile)
