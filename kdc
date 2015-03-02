@@ -122,7 +122,7 @@ function buildImage {
 	# Use a temporary file for the add principal directives.
 	# TODO(tillt): This seems unclean - find a better way.
 	TEMP_PRINCIPALS="_principals.txt"
-	for authenticatee_host in "${KDC_AUTHENTICATEE_HOSTS[@]}"
+	for authenticatee_host in "${KDC_CLIENTS[@]}"
 	do
 		for principal in "${KDC_PRINCIPALS[@]}"
 		do
