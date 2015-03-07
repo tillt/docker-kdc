@@ -10,35 +10,87 @@
 # Latest version is located at: https://github.com/tillt/docker-kdc
 #
 
-# Kerberos "principal password".
-# TODO(tillt): Find a way to support default array parameters.
-KDC_PRINCIPALS=("tillt matilda")
-
-# Host/s requesting authentication using the above principal/s.
-# e.h. ("jupiter" "mars" "venus")
-KDC_CLIENTS=(`hostname -s`)
-
 # KDC hostname.
 KDC_HOST_NAME=${KDC_HOST_NAME:-'kdc'}
 # External KDC IP.
 KDC_NATHOST=${KDC_NATHOST:-'127.0.0.1'}
 # External KDC port.
 KDC_PORT=${KDC_PORT:-'48088'}
+# Config file.
+KDC_CONFIG=${KDC_CONFIG:-'kdc.json'}
+
+# Default principal.
+KDC_PRINCIPAL=${KDC_PRINCIPAL:-'tillt'}
+# Default password.
+KDC_PASSWORD=${KDC_PASSWORD:-'matilda'}
+# Host requesting authentication.
+# Default derived from hostname -s.
+KDC_CLIENT=${KDC_CLIENT:-$(hostname -s)}
 # Kerberos domain name.
-KDC_DOMAIN_NAME=${KDC_DOMAIN_NAME:-'example.com'}
+# Default derived from fully qualified domain-name of the host.
+# Using backtick operator to prevent sublime's highlighting from freaking out.
+DEFAULT=`hostname -f | 							\
+	awk -F. '{$1="";OFS="." ; print $0 ; OFS=""}' |			\
+	sed 's/^.//'`
+KDC_DOMAIN_NAME=${KDC_DOMAIN_NAME:-$DEFAULT}
+
+# Try read and parse the setup from a JSON file.
+if [ -e $KDC_CONFIG ]; then
+	status=$(cat $KDC_CONFIG | jq 'has("ip")')
+	if [[ $status == "true" ]]; then
+		KDC_NATHOST=$(cat $KDC_CONFIG | 			\
+			jq '.ip' | 					\
+			sed -e 's/^"//'  -e 's/"$//')
+	fi
+	status=$(cat $KDC_CONFIG | jq 'has("port")')
+	if [[ $status == "true" ]]; then
+		KDC_PORT=$(cat $KDC_CONFIG | 				\
+			jq '.port' | 					\
+			sed -e 's/^"//'  -e 's/"$//')
+	fi
+	status=$(cat $KDC_CONFIG | jq 'has("domain")')
+	if [[ $status == "true" ]]; then
+		KDC_DOMAIN_NAME=$(cat $KDC_CONFIG | 			\
+			jq '.domain' | 					\
+			sed -e 's/^"//'  -e 's/"$//')
+	fi
+	status=$(cat $KDC_CONFIG | jq 'has("realm")')
+	if [[ $status == "true" ]]; then
+		KDC_REALM_NAME=$(cat $KDC_CONFIG | 			\
+			jq '.realm' | 					\
+			sed -e 's/^"//'  -e 's/"$//')
+	fi
+	status=$(cat $KDC_CONFIG | jq 'has("principals")')
+	if [[ $status == "true" ]]; then
+		OLD_IFS=$IFS
+		IFS=$'\n'
+		KDC_PRINCIPALS=($(cat $KDC_CONFIG | 			\
+			jq '.principals[] | .id+" "+.password'))
+		IFS=$OLD_IFS
+	fi
+fi
+
+DEFAULT=`echo $KDC_DOMAIN_NAME | awk '{print toupper($0)}'`
 # Kerberos realm name.
-KDC_REALM_NAME=${KDC_REALM_NAME:-'EXAMPLE.COM'}
+# Default derived from KDC_DOMAIN_NAME.
+KDC_REALM_NAME=${KDC_REALM_NAME:-$DEFAULT}
+
+# If we did not get any principals from our configuration, render a default.
+if [ ${#KDC_PRINCIPALS[@]} -eq 0 ]; then
+	# Render a default principal/password array for allowing a simple setup.
+	KDC_PRINCIPALS=("$KDC_PRINCIPAL/$KDC_CLIENT.$KDC_DOMAIN_NAME@$KDC_REALM_NAME $KDC_PASSWORD")
+fi
+
 
 DOCKERIMAGE='tillt/docker-kdc:latest'
 CONTAINER='docker'
 CONTROL_VM='VBoxManage controlvm boot2docker-vm'
-GET_KDC_HOST="echo $KDC_NATHOST"
-
+GET_KDC_HOST='echo $KDC_NATHOST'
 
 # Adjust container in case of OSX.
 if [[ $OSTYPE =~ darwin.+ ]]; then
 	CONTAINER='boot2docker'
-	GET_KDC_HOST="boot2docker ip"
+	GET_KDC_HOST='boot2docker ip'
 fi
 
 
@@ -50,7 +102,7 @@ function prepareDocker {
 			boot2docker up
 			setupPortForward
 		fi
-		`$(boot2docker shellinit)`
+#		`$(boot2docker shellinit)`
 	fi
 }
 
@@ -81,7 +133,7 @@ function startDocker {
 		--name=$KDC_HOST_NAME 					\
 		$DOCKERIMAGE
 
-	KDC_HOST=`$GET_KDC_HOST`
+	KDC_HOST=$($GET_KDC_HOST)
 	echo ""
 	echo "Kerberos KDC now reachable at '$KDC_HOST:$KDC_PORT'"
 	echo ""
@@ -116,41 +168,37 @@ function stopDocker {
 
 # Render docker container image.
 function buildImage {
-	RENDER_PRINCIPAL="RUN /bin/echo -e '\n\n\n\n\n\nPASSWORD\nPASSWORD\n' | kadmin -l add PRINCIPAL/HOST_NAME.DOMAIN_NAME"
-	EXPORT_KEYTAB="RUN kadmin -l ext_keytab -k /etc/docker-kdc/krb5.keytab"
+	local RENDER_PRINCIPAL="RUN /bin/echo -e '\n\n\n\n\n\nPASSWORD\nPASSWORD\n' | kadmin -l add PRINCIPAL"
+	local EXPORT_KEYTAB="RUN kadmin -l ext_keytab -k /etc/docker-kdc/krb5.keytab"
 
 	# Use a temporary file for the add principal directives.
 	# TODO(tillt): This seems unclean - find a better way.
-	TEMP_PRINCIPALS="_principals.txt"
-	for authenticatee_host in "${KDC_CLIENTS[@]}"
+	local TEMP_PRINCIPALS="_principals.txt"
+	for principal in "${KDC_PRINCIPALS[@]}"
 	do
-		for principal in "${KDC_PRINCIPALS[@]}"
-		do
-			IFS=' ' read -ra principal <<< "$principal"
-			IFS=''
+		principal=$(echo $principal | sed -e 's=^"=='  -e 's="$==')
+		IFS=' ' read -ra principal <<< "$principal"
+		IFS=''
 
-			echo $(echo $RENDER_PRINCIPAL |		 	\
-			sed -e "s/PRINCIPAL/${principal[0]}/g"		\
-			-e "s/PASSWORD/${principal[1]}/g"		\
-			-e "s/HOST_NAME/$authenticatee_host/g"		\
-			-e "s/DOMAIN_NAME/$KDC_DOMAIN_NAME/g" 		\
-			-e "s/REALM_NAME/$KDC_REALM_NAME/g")		\
-			>>$TEMP_PRINCIPALS
-			EXPORT_KEYTAB+=$(echo " ${principal[0]}/$authenticatee_host.$KDC_DOMAIN_NAME@$KDC_REALM_NAME")
-		done
+		echo $(echo $RENDER_PRINCIPAL |		 	\
+		sed -e "s=PRINCIPAL=${principal[0]}=g"		\
+		-e "s=PASSWORD=${principal[1]}=g")		\
+		>>$TEMP_PRINCIPALS
+		EXPORT_KEYTAB+=$(echo " ${principal[0]}")
 	done
 
-	DOCKER_FILE=$(<templates/Dockerfile)
-	ADD_PRINCIPALS=$(<$TEMP_PRINCIPALS)
+	local DOCKER_FILE=$(<templates/Dockerfile)
+	local ADD_PRINCIPALS=$(<$TEMP_PRINCIPALS)
+
 	DOCKER_FILE=$(echo "${DOCKER_FILE//PRINCIPALS/$ADD_PRINCIPALS}")
 	DOCKER_FILE=$(echo "${DOCKER_FILE//EXPORT_KEYTAB/$EXPORT_KEYTAB}")
 	echo $DOCKER_FILE > Dockerfile
 
 	rm -f $TEMP_PRINCIPALS
 
-	sed -e "s/HOST_NAME/$KDC_HOST_NAME/g" 				\
-		-e "s/DOMAIN_NAME/$KDC_DOMAIN_NAME/g" 			\
-		-e "s/REALM_NAME/$KDC_REALM_NAME/g"			\
+	sed -e "s=HOST_NAME=$KDC_HOST_NAME=g" 				\
+		-e "s=DOMAIN_NAME=$KDC_DOMAIN_NAME=g" 			\
+		-e "s=REALM_NAME=$KDC_REALM_NAME=g"			\
 		templates/krb5.conf > krb5.conf
 
 	# Use --no-cache switch to prevent broken builds due to outdated caches.
@@ -178,13 +226,29 @@ case "$1" in
 		buildImage
 		;;
 	shellinit)
-		if [[ $CONTAINER == "boot2docker" ]]; then
-			boot2docker shellinit
-		fi
 		echo "    export KRB5_CONFIG=$(pwd)/krb5.conf"
 		echo "    export KRB5_KTNAME=$(pwd)/krb5.keytab"
 		;;
+	config)
+		echo "System"
+		echo "  fqdn:      $(hostname -f)"
+		echo "KDC"
+		echo "  nat:       $KDC_NATHOST"
+		echo "  port:      $KDC_PORT"
+		echo "Kerberos"
+		echo "  domain:    $KDC_DOMAIN_NAME"
+		echo "  realm:     $KDC_REALM_NAME"
+		for principal in "${KDC_PRINCIPALS[@]}"
+		do
+			principal=$(echo $principal | sed -e 's=^"=='  -e 's="$==')
+			OLD_IFS=$IFS
+			IFS=' ' read -ra principal <<< "$principal"
+			IFS=$OLD_IFS
+			echo "  principal: ${principal[0]}, password: ${principal[1]}"
+		done
+
+		;;
 	*)
-		echo "Usage: $0 start|stop|build|clean|shellinit"
+		echo "Usage: $0 start|stop|build|clean|config|shellinit"
 		;;
 esac

@@ -1,4 +1,5 @@
 FROM ubuntu:14.04
+MAINTAINER Till Toenshoff <@ttoenshoff>
 
 RUN apt-get -y update
 

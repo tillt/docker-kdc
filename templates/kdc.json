@@ -1,0 +1,16 @@
+{
+  "principals": [
+    {
+      "id": "tillt/host.example.com@EXAMPLE.COM",
+      "password": "herbert"
+    },
+    {
+      "id": "tillt@EXAMPLE.COM",
+      "password": "herbert"
+    }
+  ],
+  "domain": "example.com",
+  "realm": "EXAMPLE.COM",
+  "ip": "127.0.0.1",
+  "port": 48088
+}
