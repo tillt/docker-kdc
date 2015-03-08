@@ -102,7 +102,7 @@ function prepareDocker {
 			boot2docker up
 			setupPortForward
 		fi
-#		`$(boot2docker shellinit)`
+		`$(boot2docker shellinit)`
 	fi
 }
 
@@ -133,7 +133,7 @@ function startDocker {
 		--name=$KDC_HOST_NAME 					\
 		$DOCKERIMAGE
 
-	KDC_HOST=$($GET_KDC_HOST)
+	local KDC_HOST=$($GET_KDC_HOST)
 	echo ""
 	echo "Kerberos KDC now reachable at '$KDC_HOST:$KDC_PORT'"
 	echo ""
@@ -208,6 +208,28 @@ function buildImage {
 }
 
 
+function testBoot2dockerActive {
+	boot2docker status &> /dev/null || boot2docker init
+	if [[ `boot2docker status` == "running" ]]; then
+		return 0
+	fi
+	return 1
+}
+
+
+function testKdcReachable {
+	local HOST=$($GET_KDC_HOST)
+	echo -n "at $HOST:$KDC_PORT... "
+	echo $'\n' $'\n' $'\n' | 			\
+		telnet $HOST $KDC_PORT 2>/dev/null |	\
+		grep Connected >/dev/null
+	if [[ $? -eq 0 ]]; then
+		return 0
+	fi
+	return 1
+}
+
+
 case "$1" in
 	start)
 		prepareDocker
@@ -229,6 +251,24 @@ case "$1" in
 		echo "    export KRB5_CONFIG=$(pwd)/krb5.conf"
 		echo "    export KRB5_KTNAME=$(pwd)/krb5.keytab"
 		;;
+	test)
+		if [[ $CONTAINER == "boot2docker" ]]; then
+			echo -n "Checking boot2docker active... "
+			if testBoot2dockerActive; then
+				echo "ok"
+			else
+				echo "failed"
+				exit 1
+			fi
+		fi
+		echo -n "Trying to connect to KDC... "
+		if testKdcReachable; then
+			echo "ok"
+		else
+			echo "failed"
+			exit 1
+		fi
+		;;
 	config)
 		echo "System"
 		echo "  fqdn:      $(hostname -f)"
@@ -249,6 +289,6 @@ case "$1" in
 
 		;;
 	*)
-		echo "Usage: $0 start|stop|build|clean|config|shellinit"
+		echo "Usage: $0 start|stop|build|clean|config|test|shellinit"
 		;;
 esac

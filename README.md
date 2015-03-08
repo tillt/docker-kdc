@@ -58,6 +58,11 @@ This will render the image which is based on plain ubuntu 14.04. Additionally th
 
 On OSX, this step starts by setting up the VM (via boot2docker). Then, on all host systems, the container is started in detached mode, allowing you to keep on working with this shell without having to fork another process. The container name is directly derived from the hostname supplied via the configuration (see [Configuration](#configuration)).
 
+###Run a quick test
+```
+./kdc test
+```
+On OSX, this first checks if the VM is active. Then, on all hosts systems, a network connection to the KDC is attempted.
 
 ###Prepare the environment
 ```
@@ -235,6 +240,9 @@ Removes the docker image.
 
 ##config
 Shows relevant configuration information.
+
+##test
+Checks if the KDC is reachable and accepting connections.
 
 ##shellinit
 Renders the environment variables needed for using the KDC. KRB5_CONFIG points towards the temporary configuration file. KRB5_KTNAME points towards the temporary keytab file.
