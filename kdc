@@ -274,7 +274,7 @@ case "$1" in
 		echo "  fqdn:      $(hostname -f)"
 		echo "KDC"
 		KDC_HOST=`$GET_KDC_HOST`
-		echo "  kdc:       $KDC_HOST"
+		echo "  host:      $KDC_HOST"
 		echo "  port:      $KDC_PORT"
 		echo "Kerberos"
 		echo "  domain:    $KDC_DOMAIN_NAME"
