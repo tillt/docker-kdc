@@ -85,12 +85,12 @@ fi
 DOCKERIMAGE='tillt/docker-kdc:latest'
 CONTAINER='docker'
 CONTROL_VM='VBoxManage controlvm boot2docker-vm'
-GET_KDC_HOST='echo "$KDC_NATHOST"'
+GET_KDC_HOST="echo $KDC_NATHOST"
 
 # Adjust container in case of OSX.
 if [[ $OSTYPE =~ darwin.+ ]]; then
 	CONTAINER='boot2docker'
-#	GET_KDC_HOST='boot2docker ip'
+	GET_KDC_HOST='boot2docker ip'
 fi
 
 
@@ -273,7 +273,8 @@ case "$1" in
 		echo "System"
 		echo "  fqdn:      $(hostname -f)"
 		echo "KDC"
-		echo "  nat:       $KDC_NATHOST"
+		KDC_HOST=`$GET_KDC_HOST`
+		echo "  kdc:       $KDC_HOST"
 		echo "  port:      $KDC_PORT"
 		echo "Kerberos"
 		echo "  domain:    $KDC_DOMAIN_NAME"
