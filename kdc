@@ -85,12 +85,12 @@ fi
 DOCKERIMAGE='tillt/docker-kdc:latest'
 CONTAINER='docker'
 CONTROL_VM='VBoxManage controlvm boot2docker-vm'
-GET_KDC_HOST='echo ' $KDC_NATHOST
+GET_KDC_HOST='echo "$KDC_NATHOST"'
 
 # Adjust container in case of OSX.
 if [[ $OSTYPE =~ darwin.+ ]]; then
 	CONTAINER='boot2docker'
-	GET_KDC_HOST='boot2docker ip'
+#	GET_KDC_HOST='boot2docker ip'
 fi
 
 
