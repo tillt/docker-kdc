@@ -85,7 +85,7 @@ fi
 DOCKERIMAGE='tillt/docker-kdc:latest'
 CONTAINER='docker'
 CONTROL_VM='VBoxManage controlvm boot2docker-vm'
-GET_KDC_HOST='echo $KDC_NATHOST'
+GET_KDC_HOST='echo \$KDC_NATHOST'
 
 # Adjust container in case of OSX.
 if [[ $OSTYPE =~ darwin.+ ]]; then
@@ -133,7 +133,7 @@ function startDocker {
 		--name=$KDC_HOST_NAME 					\
 		$DOCKERIMAGE
 
-	local KDC_HOST=$($GET_KDC_HOST)
+	local KDC_HOST=`$GET_KDC_HOST`
 	echo ""
 	echo "Kerberos KDC now reachable at '$KDC_HOST:$KDC_PORT'"
 	echo ""
