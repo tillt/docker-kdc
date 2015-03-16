@@ -18,6 +18,8 @@ KDC_NATHOST=${KDC_NATHOST:-'127.0.0.1'}
 KDC_PORT=${KDC_PORT:-'48088'}
 # Config file.
 KDC_CONFIG=${KDC_CONFIG:-'kdc.json'}
+# Temmplates source dir.
+KDC_TEMPLATES_DIR=${KDC_TEMPLATES_DIR:-'templates'}
 
 # Default principal.
 KDC_PRINCIPAL=${KDC_PRINCIPAL:-'tillt'}
@@ -141,7 +143,7 @@ function startDocker {
 	sed -e "s/HOST_NAME/$KDC_HOST:$KDC_PORT/g"			\
 		-e "s/DOMAIN_NAME/$KDC_DOMAIN_NAME/g" 			\
 		-e "s/REALM_NAME/$KDC_REALM_NAME/g"			\
-		templates/krb5.conf > krb5.conf
+		"$KDC_TEMPLATES_DIR/krb5.conf" >krb5.conf
 
 	docker cp $KDC_HOST_NAME:/etc/docker-kdc/krb5.keytab .
 
@@ -187,7 +189,7 @@ function buildImage {
 		EXPORT_KEYTAB+=$(echo " ${principal[0]}")
 	done
 
-	local DOCKER_FILE=$(<templates/Dockerfile)
+	local DOCKER_FILE=$(<$KDC_TEMPLATES_DIR/Dockerfile)
 	local ADD_PRINCIPALS=$(<$TEMP_PRINCIPALS)
 
 	DOCKER_FILE=$(echo "${DOCKER_FILE//PRINCIPALS/$ADD_PRINCIPALS}")
@@ -199,7 +201,7 @@ function buildImage {
 	sed -e "s=HOST_NAME=$KDC_HOST_NAME=g" 				\
 		-e "s=DOMAIN_NAME=$KDC_DOMAIN_NAME=g" 			\
 		-e "s=REALM_NAME=$KDC_REALM_NAME=g"			\
-		templates/krb5.conf > krb5.conf
+		"$KDC_TEMPLATES_DIR/krb5.conf" >krb5.conf
 
 	# Use --no-cache switch to prevent broken builds due to outdated caches.
 	docker build --no-cache -t $DOCKERIMAGE .
@@ -271,21 +273,21 @@ case "$1" in
 		;;
 	config)
 		echo "System"
-		echo "  fqdn:      $(hostname -f)"
+		echo "    fqdn:      $(hostname -f)"
 		echo "KDC"
 		KDC_HOST=`$GET_KDC_HOST`
-		echo "  host:      $KDC_HOST"
-		echo "  port:      $KDC_PORT"
+		echo "    host:      $KDC_HOST"
+		echo "    port:      $KDC_PORT"
 		echo "Kerberos"
-		echo "  domain:    $KDC_DOMAIN_NAME"
-		echo "  realm:     $KDC_REALM_NAME"
+		echo "    domain:    $KDC_DOMAIN_NAME"
+		echo "    realm:     $KDC_REALM_NAME"
 		for principal in "${KDC_PRINCIPALS[@]}"
 		do
 			principal=$(echo $principal | sed -e 's=^"=='  -e 's="$==')
 			OLD_IFS=$IFS
 			IFS=' ' read -ra principal <<< "$principal"
 			IFS=$OLD_IFS
-			echo "  principal: ${principal[0]}, password: ${principal[1]}"
+			echo "    principal: ${principal[0]}, password: ${principal[1]}"
 		done
 
 		;;
