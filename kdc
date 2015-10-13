@@ -87,12 +87,12 @@ fi
 DOCKERIMAGE='tillt/docker-kdc:latest'
 CONTAINER='docker'
 CONTROL_VM='VBoxManage controlvm boot2docker-vm'
-GET_KDC_HOST="echo $KDC_NATHOST"
+GET_KDC_HOST="echo \"$KDC_NATHOST\""
 
 # Adjust container in case of OSX.
 if [[ $OSTYPE =~ darwin.+ ]]; then
-	CONTAINER='boot2docker'
-	GET_KDC_HOST='boot2docker ip'
+	CONTAINER='docker-machine'
+	GET_KDC_HOST="$CONTAINER ip $DOCKER_MACHINE_NAME"
 fi
 
 
@@ -125,28 +125,37 @@ function deletePortForward {
 }
 
 
+function createConfForTarget {
+	sed -e "s/HOST_NAME/$1/g"			\
+	-e "s/DOMAIN_NAME/$KDC_DOMAIN_NAME/g" 			\
+	-e "s/REALM_NAME/$KDC_REALM_NAME/g"			\
+	"$KDC_TEMPLATES_DIR/krb5.conf" >krb5.conf
+}
+
+
 # Start docker container.
 # Also renders a temporary KDC configuration file and exports the keytab.
 function startDocker {
 	echo "Kerberos KDC container starting..."
+
+	local KDC_HOST=`$GET_KDC_HOST`
+
+	createConfForTarget "$KDC_HOST:$KDC_PORT"
+
+	echo ""
+	echo "Kerberos KDC will externally be reachable at '$KDC_HOST:$KDC_PORT'"
+	echo ""
+
+	echo -n "Container ID "
 	docker run -d -h $KDC_HOST_NAME					\
 		-p $KDC_PORT:88	 					\
 		-p $KDC_PORT:88/udp 					\
 		--name=$KDC_HOST_NAME 					\
 		$DOCKERIMAGE
 
-	local KDC_HOST=`$GET_KDC_HOST`
-	echo ""
-	echo "Kerberos KDC now reachable at '$KDC_HOST:$KDC_PORT'"
-	echo ""
-
-	sed -e "s/HOST_NAME/$KDC_HOST:$KDC_PORT/g"			\
-		-e "s/DOMAIN_NAME/$KDC_DOMAIN_NAME/g" 			\
-		-e "s/REALM_NAME/$KDC_REALM_NAME/g"			\
-		"$KDC_TEMPLATES_DIR/krb5.conf" >krb5.conf
-
 	docker cp $KDC_HOST_NAME:/etc/docker-kdc/krb5.keytab .
 
+	echo ""
 	echo "For using the KDC, make sure you use the following environment:"
 	echo "    export KRB5_CONFIG=$(pwd)/krb5.conf"
 	echo "    export KRB5_KTNAME=$(pwd)/krb5.keytab"
@@ -198,21 +207,36 @@ function buildImage {
 
 	rm -f $TEMP_PRINCIPALS
 
-	sed -e "s=HOST_NAME=$KDC_HOST_NAME=g" 				\
-		-e "s=DOMAIN_NAME=$KDC_DOMAIN_NAME=g" 			\
-		-e "s=REALM_NAME=$KDC_REALM_NAME=g"			\
-		"$KDC_TEMPLATES_DIR/krb5.conf" >krb5.conf
+	createConfForTarget "$KDC_HOST_NAME"
 
-	# Use --no-cache switch to prevent broken builds due to outdated caches.
-	docker build --no-cache -t $DOCKERIMAGE .
-	rm -f Dockerfile
-	rm -f krb5.conf
+	local BUILD_CMD="docker build --no-cache -t $DOCKERIMAGE ."
+
+	if [[ "$1" != "dryrun" ]]; then
+		# Use --no-cache switch to prevent broken builds due to
+		# outdated caches.
+		$($BUILD_CMD)
+		rm -f Dockerfile
+		rm -f krb5.conf
+	else
+		echo "For building, use"
+		echo "    $BUILD_CMD"
+	fi
 }
 
 
-function testBoot2dockerActive {
+
+function testBoot2DockerActive {
 	boot2docker status &> /dev/null || boot2docker init
 	if [[ `boot2docker status` == "running" ]]; then
+		return 0
+	fi
+	return 1
+}
+
+
+function testDockerMachineActive {
+	docker-machine status $DOCKER_MACHINE_NAME &> /dev/null || docker-machine create $DOCKER_MACHINE_NAME
+	if [[ `docker-machine status $DOCKER_MACHINE_NAME` == "Running" ]]; then
 		return 0
 	fi
 	return 1
@@ -235,7 +259,7 @@ function testKdcReachable {
 case "$1" in
 	start)
 		prepareDocker
-		startDocker
+		startDocker $2
 		;;
 	stop)
 		prepareDocker
@@ -247,16 +271,24 @@ case "$1" in
 		;;
 	build)
 		prepareDocker
-		buildImage
+		buildImage $2
 		;;
 	shellinit)
 		echo "    export KRB5_CONFIG=$(pwd)/krb5.conf"
 		echo "    export KRB5_KTNAME=$(pwd)/krb5.keytab"
 		;;
 	test)
-		if [[ $CONTAINER == "boot2docker" ]]; then
+		if [[ "$CONTAINER" == "boot2docker" ]]; then
 			echo -n "Checking boot2docker active... "
 			if testBoot2dockerActive; then
+				echo "ok"
+			else
+				echo "failed"
+				exit 1
+			fi
+		else
+			echo -n "Checking docker-machine active... "
+			if testDockerMachineActive; then
 				echo "ok"
 			else
 				echo "failed"
@@ -270,6 +302,9 @@ case "$1" in
 			echo "failed"
 			exit 1
 		fi
+		;;
+	attach)
+		docker exec -it $2 /bin/bash
 		;;
 	config)
 		echo "System"
@@ -292,6 +327,6 @@ case "$1" in
 
 		;;
 	*)
-		echo "Usage: $0 start|stop|build|clean|config|test|shellinit"
+		echo "Usage: $0 start|stop|build|clean|config|test|attach|shellinit [dryrun]"
 		;;
 esac

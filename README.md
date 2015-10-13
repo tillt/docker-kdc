@@ -221,11 +221,11 @@ The default configuration is most likely good enough for your first experiments.
 #Reference
 
 ```
-./kdc start|stop|build|clean|config|shellinit
+./kdc start|stop|build|clean|config|test|attach|shellinit [dryrun]
 ```
 
-##build
-Builds the docker image.
+##build [dryrun]
+Builds the docker image. Once `dryrun` is specified, the `Dockerfile` and the container's `krb5.conf` is created but no actual building will be done, allowing for further, manual editing.
 
 ##start
 Starts the container in detached mode while also producing a Kerberos configuration file (`krb5.conf`) as well as a Kerberos keytab (`krb5.keytab`) locally. 
@@ -243,6 +243,9 @@ Shows relevant configuration information.
 
 ##test
 Checks if the KDC is reachable and accepting connections.
+
+##attach CONTAINER_ID
+Attaches a shell to the kdc container. You need to provide the container id generated when starting the kdc container.
 
 ##shellinit
 Renders the environment variables needed for using the KDC. KRB5_CONFIG points towards the temporary configuration file. KRB5_KTNAME points towards the temporary keytab file.
