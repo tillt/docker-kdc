@@ -5,6 +5,7 @@ RUN apt-get -y update
 
 ADD krb5.conf /etc/krb5.conf
 
+RUN echo package heimdal/realm string REALM | debconf-set-selections
 RUN apt-get -y install heimdal-kdc
 RUN apt-get -y install libsasl2-modules-gssapi-heimdal
 
