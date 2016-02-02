@@ -170,7 +170,7 @@ function stopDocker {
 
 # Render docker container image.
 function buildImage {
-	local RENDER_PRINCIPAL="kadmin -l add --password=PASSWORD --use-defaults PRINCIPAL"
+	local RENDER_PRINCIPAL="RUN kadmin -l add --password=PASSWORD --use-defaults PRINCIPAL"
 	local EXPORT_KEYTAB="RUN kadmin -l ext_keytab -k /etc/docker-kdc/krb5.keytab"
 
 	# Use a temporary file for the add principal directives.
