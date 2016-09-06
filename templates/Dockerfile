@@ -1,13 +1,13 @@
 FROM ubuntu:14.04
 MAINTAINER Till Toenshoff <@ttoenshoff>
 
-RUN apt-get -y update
+ARG DEBIAN_FRONTEND=noninteractive
 
 ADD krb5.conf /etc/krb5.conf
 
 RUN echo package heimdal/realm string REALM | debconf-set-selections
-RUN apt-get -y install heimdal-kdc
-RUN apt-get -y install libsasl2-modules-gssapi-heimdal
+RUN apt-get -y update && \
+    apt-get -y install heimdal-kdc libsasl2-modules-gssapi-heimdal
 
 EXPOSE	88
 
