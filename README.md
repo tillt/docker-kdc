@@ -58,6 +58,11 @@ This will render the image which is based on plain ubuntu 14.04. Additionally th
 
 On OSX, this step starts by setting up the VM (via boot2docker). Then, on all host systems, the container is started in detached mode, allowing you to keep on working with this shell without having to fork another process. The container name is directly derived from the hostname supplied via the configuration (see [Configuration](#configuration)).
 
+###Watch the KDC server log file
+```
+docker exec -it kdc tail -f /var/log/heimdal-kdc.log
+```
+
 ###Run a quick test
 ```
 ./kdc test
