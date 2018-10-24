@@ -90,10 +90,11 @@ CONTROL_VM='VBoxManage controlvm boot2docker-vm'
 GET_KDC_HOST="echo $KDC_NATHOST"
 
 # Adjust container in case of OSX.
-if [[ $OSTYPE =~ darwin.+ ]]; then
-	CONTAINER='boot2docker'
-	GET_KDC_HOST='boot2docker ip'
-fi
+# No longer needed for most users because of Docker for Mac
+#if [[ $OSTYPE =~ darwin.+ ]]; then
+#	CONTAINER='boot2docker'
+#	GET_KDC_HOST='boot2docker ip'
+#fi
 
 
 # Start boot2docker if not running and create port forwarding rules for OSX.
